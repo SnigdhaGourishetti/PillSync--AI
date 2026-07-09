@@ -16,6 +16,12 @@ class RegisterSerializer(serializers.ModelSerializer):
             "password",
             "role",
             "phone",
+            "blood_group",
+            "emergency_contact",
+            "allergies",
+            "date_of_birth",
+            "assigned_caregiver",
+            "caregiver_shift",
         ]
 
     def create(self, validated_data):
@@ -26,6 +32,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
 
         return user
+
+    def validate_role(self, value):
+        if value == User.Role.ADMIN and User.objects.filter(role=User.Role.ADMIN).exists():
+            raise serializers.ValidationError("Only one admin account is allowed.")
+        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -38,4 +49,10 @@ class UserSerializer(serializers.ModelSerializer):
             "email",
             "role",
             "phone",
+            "blood_group",
+            "emergency_contact",
+            "allergies",
+            "date_of_birth",
+            "assigned_caregiver",
+            "caregiver_shift",
         ]
