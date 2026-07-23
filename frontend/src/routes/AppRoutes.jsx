@@ -14,6 +14,7 @@ import Prescriptions from "../pages/prescriptions/Prescriptions";
 import Analytics from "../pages/analytics/Analytics";
 import Profile from "../pages/profile/Profile";
 import Settings from "../pages/settings/Settings";
+import MedicationHistory from "../pages/medication-history/MedicationHistory";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 function RoleDashboardRouter() {
@@ -133,6 +134,15 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/medication-history"
+          element={
+            <ProtectedRoute>
+              <MedicationHistory />
             </ProtectedRoute>
           }
         />

@@ -6,6 +6,7 @@ const emptyForm = {
   dosage: "",
   medicine_type: "Tablet",
   frequency_per_day: "",
+  schedule_type: "CUSTOM",
   stock_quantity: "",
   expiry_date: "",
   instructions: "",
@@ -23,6 +24,7 @@ export default function AddMedicineModal({ medicine, onClose, onSuccess }) {
         dosage: medicine.dosage || "",
         medicine_type: medicine.medicine_type || "Tablet",
         frequency_per_day: medicine.frequency_per_day || "",
+        schedule_type: medicine.schedule_type || "CUSTOM",
         stock_quantity: medicine.stock_quantity || "",
         expiry_date: medicine.expiry_date || "",
         instructions: medicine.instructions || "",
@@ -63,6 +65,7 @@ export default function AddMedicineModal({ medicine, onClose, onSuccess }) {
         dosage: form.dosage,
         medicine_type: form.medicine_type,
         frequency_per_day: Number(form.frequency_per_day),
+        schedule_type: form.schedule_type,
         stock_quantity: Number(form.stock_quantity),
         expiry_date: form.expiry_date,
         instructions: form.instructions,
@@ -116,6 +119,15 @@ export default function AddMedicineModal({ medicine, onClose, onSuccess }) {
               <input type="number" min="1" name="frequency_per_day" value={form.frequency_per_day} placeholder="Frequency" onChange={handleChange} className="w-full rounded-xl bg-slate-800 p-3" />
               {errors.frequency_per_day && <p className="mt-1 text-sm text-rose-400">{errors.frequency_per_day}</p>}
             </div>
+          </div>
+
+          <div>
+            <select name="schedule_type" value={form.schedule_type} onChange={handleChange} className="w-full rounded-xl bg-slate-800 p-3">
+              <option value="CUSTOM">Custom Time</option>
+              <option value="MORNING">Morning</option>
+              <option value="AFTERNOON">Afternoon</option>
+              <option value="NIGHT">Night</option>
+            </select>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

@@ -19,3 +19,27 @@ export const deleteReminder = async (id) => {
   const response = await api.delete(`/reminders/${id}/`);
   return response.data;
 };
+
+export const actionReminder = async (id, action, snoozeMinutes) => {
+  const payload = { action };
+  if (snoozeMinutes !== undefined) {
+    payload.snooze_minutes = snoozeMinutes;
+  }
+  const response = await api.post(`/reminders/${id}/action/`, payload);
+  return response.data;
+};
+
+export const getReminderHistory = async (period = "daily") => {
+  const response = await api.get(`/reminders/history/?period=${period}`);
+  return response.data;
+};
+
+export const getReminderDashboard = async () => {
+  const response = await api.get(`/reminders/dashboard/`);
+  return response.data;
+};
+
+export const sendTestEmail = async () => {
+  const response = await api.post(`/reminders/test_email/`);
+  return response.data;
+};

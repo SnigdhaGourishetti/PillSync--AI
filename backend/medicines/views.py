@@ -12,3 +12,10 @@ class MedicineViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        # Reset low_stock_email_sent flag when stock_quantity is updated
+        if 'stock_quantity' in serializer.validated_data:
+            instance.low_stock_email_sent = False
+            instance.save()

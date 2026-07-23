@@ -9,6 +9,7 @@ urlpatterns = [
     path("api/medicines/", include("medicines.urls")),
     path("api/reminders/", include("reminders.urls")),
     path("api/prescriptions/", include("prescriptions.urls")),
+    path("api/medication-history/", include("medication_history.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

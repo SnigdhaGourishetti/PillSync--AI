@@ -110,6 +110,7 @@ export default function Medicines() {
                 <th className="p-5 text-left text-slate-300">Type</th>
                 <th className="p-5 text-left text-slate-300">Frequency</th>
                 <th className="p-5 text-left text-slate-300">Stock</th>
+                <th className="p-5 text-left text-slate-300">Days Remaining</th>
                 <th className="p-5 text-left text-slate-300">Actions</th>
               </tr>
             </thead>
@@ -117,11 +118,25 @@ export default function Medicines() {
             <tbody>
               {filteredMedicines.map((medicine) => (
                 <tr key={medicine.id} className="border-t border-white/10">
-                  <td className="p-5 text-white">{medicine.medicine_name}</td>
+                  <td className="p-5 text-white">
+                    <div>
+                      <p>{medicine.medicine_name}</p>
+                      {medicine.days_remaining <= 2 && (
+                        <span className="inline-flex rounded-full px-2 py-1 text-xs font-semibold bg-rose-500/20 text-rose-400 mt-1">
+                          Low Stock
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="p-5 text-slate-300">{medicine.dosage}</td>
                   <td className="p-5 text-slate-300">{medicine.medicine_type}</td>
-                  <td className="p-5 text-slate-300">{medicine.frequency_per_day}</td>
+                  <td className="p-5 text-slate-300">{medicine.frequency_per_day}x/day</td>
                   <td className="p-5 text-emerald-400">{medicine.stock_quantity}</td>
+                  <td className="p-5">
+                    <span className={`font-semibold ${medicine.days_remaining <= 2 ? 'text-rose-400' : 'text-slate-300'}`}>
+                      {medicine.days_remaining} days
+                    </span>
+                  </td>
                   <td className="p-5">
                     <div className="flex gap-2">
                       <button

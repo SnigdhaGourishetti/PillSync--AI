@@ -5,8 +5,11 @@ export default function ReminderModal({ reminder, medicines, onClose, onSave }) 
     medicine: "",
     reminder_time: "",
     repeat_type: "DAILY",
+    status: "PENDING",
+    notes: "",
     is_active: true,
   });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (reminder) {
@@ -14,6 +17,8 @@ export default function ReminderModal({ reminder, medicines, onClose, onSave }) 
         medicine: reminder.medicine,
         reminder_time: reminder.reminder_time,
         repeat_type: reminder.repeat_type,
+        status: reminder.status || "PENDING",
+        notes: reminder.notes || "",
         is_active: reminder.is_active,
       });
     }
@@ -25,10 +30,20 @@ export default function ReminderModal({ reminder, medicines, onClose, onSave }) 
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    setErrors((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const validate = () => {
+    const nextErrors = {};
+    if (!form.medicine) nextErrors.medicine = "Please select a medicine";
+    if (!form.reminder_time) nextErrors.reminder_time = "Please select a reminder time";
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!validate()) return;
     onSave(form);
   };
 
@@ -51,6 +66,7 @@ export default function ReminderModal({ reminder, medicines, onClose, onSave }) 
               </option>
             ))}
           </select>
+          {errors.medicine && <p className="text-sm text-rose-400">{errors.medicine}</p>}
 
           <input
             type="time"
@@ -60,6 +76,7 @@ export default function ReminderModal({ reminder, medicines, onClose, onSave }) 
             required
             className="w-full rounded-xl bg-slate-800 p-3"
           />
+          {errors.reminder_time && <p className="text-sm text-rose-400">{errors.reminder_time}</p>}
 
           <select
             name="repeat_type"
@@ -71,6 +88,27 @@ export default function ReminderModal({ reminder, medicines, onClose, onSave }) 
             <option value="WEEKLY">Weekly</option>
             <option value="MONTHLY">Monthly</option>
           </select>
+
+          <select
+            name="status"
+            value={form.status}
+            onChange={handleChange}
+            className="w-full rounded-xl bg-slate-800 p-3"
+          >
+            <option value="PENDING">Pending</option>
+            <option value="TAKEN">Taken</option>
+            <option value="MISSED">Missed</option>
+            <option value="SNOOZED">Snoozed</option>
+          </select>
+
+          <textarea
+            name="notes"
+            value={form.notes}
+            onChange={handleChange}
+            placeholder="Add notes (optional)"
+            rows="3"
+            className="w-full rounded-xl bg-slate-800 p-3"
+          />
 
           <label className="flex items-center gap-2 text-sm text-slate-300">
             <input
