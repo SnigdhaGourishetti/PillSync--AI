@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../../layouts/MainLayout";
+import { sendTestEmail } from "../../services/reminderService";
 
 export default function Settings() {
   const [preferences, setPreferences] = useState({
@@ -7,6 +8,7 @@ export default function Settings() {
     emailSummaries: false,
   });
   const [message, setMessage] = useState("");
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("pillsync-settings");
@@ -34,6 +36,24 @@ export default function Settings() {
     setMessage("Preferences reset to default.");
   };
 
+  const handleSendTestEmail = async () => {
+    setSendingTestEmail(true);
+    setMessage("");
+    try {
+      const response = await sendTestEmail();
+      if (response.success) {
+        setMessage("Test email sent successfully!");
+      } else {
+        setMessage(`Failed to send test email: ${response.error}`);
+      }
+    } catch (error) {
+      setMessage("Failed to send test email. Please try again.");
+      console.error(error);
+    } finally {
+      setSendingTestEmail(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -47,7 +67,21 @@ export default function Settings() {
         </div>
       </div>
 
-      {message ? <div className="mb-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">{message}</div> : null}
+      {message ? <div className={`mb-4 rounded-2xl border p-3 text-sm ${message.includes("Failed") || message.includes("error") ? "border-rose-500/30 bg-rose-500/10 text-rose-200" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"}`}>{message}</div> : null}
+
+      <div className="rounded-3xl border border-white/10 bg-[#111827] p-6 text-white">
+        <h2 className="text-xl font-semibold">Email Configuration</h2>
+        <p className="mt-2 text-sm text-slate-400">Test your email SMTP configuration.</p>
+        <div className="mt-4">
+          <button
+            onClick={handleSendTestEmail}
+            disabled={sendingTestEmail}
+            className="rounded-xl bg-emerald-500 px-4 py-2 font-semibold text-white transition hover:bg-emerald-400 disabled:bg-slate-600 disabled:cursor-not-allowed"
+          >
+            {sendingTestEmail ? "Sending..." : "Send Test Email"}
+          </button>
+        </div>
+      </div>
 
       <div className="rounded-3xl border border-white/10 bg-[#111827] p-6 text-white">
         <h2 className="text-xl font-semibold">Notifications</h2>
