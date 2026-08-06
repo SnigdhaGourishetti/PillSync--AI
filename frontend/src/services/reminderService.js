@@ -39,6 +39,11 @@ export const getReminderDashboard = async () => {
   return response.data;
 };
 
+export const getReminderAnalytics = async () => {
+  const response = await api.get(`/reminders/analytics/`);
+  return response.data;
+};
+
 export const sendTestEmail = async () => {
   const response = await api.post(`/reminders/test_email/`);
   return response.data;

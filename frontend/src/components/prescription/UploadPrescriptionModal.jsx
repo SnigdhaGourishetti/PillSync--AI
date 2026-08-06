@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { analyzePrescription } from "../../services/prescriptionService";
 
 export default function UploadPrescriptionModal({ onClose, onUpload }) {
   const [form, setForm] = useState({
@@ -8,13 +9,39 @@ export default function UploadPrescriptionModal({ onClose, onUpload }) {
     notes: "",
     prescription_image: null,
   });
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisMessage, setAnalysisMessage] = useState("");
 
-  const handleChange = (e) => {
+  const handleChange = async (e) => {
     const { name, value, files } = e.target;
+    const nextValue = files ? files[0] : value;
     setForm((prev) => ({
       ...prev,
-      [name]: files ? files[0] : value,
+      [name]: nextValue,
     }));
+
+    if (name === "prescription_image" && files && files[0]) {
+      const data = new FormData();
+      data.append("prescription_image", files[0]);
+      try {
+        setIsAnalyzing(true);
+        setAnalysisMessage("Analyzing the prescription image...");
+        const result = await analyzePrescription(data);
+        const summaryParts = [result?.medicine_name, result?.dosage, result?.frequency, result?.duration].filter(Boolean);
+        const inferredNotes = [result?.ocr_text, summaryParts.join(" • ")].filter(Boolean).join("\n");
+        setForm((prev) => ({
+          ...prev,
+          doctor_name: prev.doctor_name || result?.medicine_name || "",
+          notes: prev.notes || inferredNotes,
+        }));
+        setAnalysisMessage(result?.ocr_text ? "OCR recognition completed." : "OCR did not return text for this image.");
+      } catch (err) {
+        console.error(err);
+        setAnalysisMessage("OCR analysis could not be completed. You can still upload the prescription manually.");
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }
   };
 
   const handleSubmit = (e) => {
@@ -38,8 +65,9 @@ export default function UploadPrescriptionModal({ onClose, onUpload }) {
           <input name="doctor_name" placeholder="Doctor Name" onChange={handleChange} required className="w-full rounded-xl bg-slate-800 p-3" />
           <input name="hospital_name" placeholder="Hospital Name" onChange={handleChange} required className="w-full rounded-xl bg-slate-800 p-3" />
           <input type="date" name="prescription_date" onChange={handleChange} required className="w-full rounded-xl bg-slate-800 p-3" />
-          <textarea name="notes" placeholder="Notes" onChange={handleChange} className="w-full rounded-xl bg-slate-800 p-3" />
+          <textarea name="notes" placeholder="Notes" value={form.notes} onChange={handleChange} className="w-full rounded-xl bg-slate-800 p-3" />
           <input type="file" name="prescription_image" accept="image/*" onChange={handleChange} required className="w-full rounded-xl bg-slate-800 p-3" />
+          {isAnalyzing ? <p className="text-sm text-cyan-400">{analysisMessage}</p> : analysisMessage ? <p className="text-sm text-emerald-400">{analysisMessage}</p> : null}
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="rounded-xl bg-gray-600 px-4 py-2">Cancel</button>
             <button type="submit" className="rounded-xl bg-emerald-500 px-4 py-2">Upload</button>

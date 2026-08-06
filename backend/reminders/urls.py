@@ -7,4 +7,5 @@ router.register("", ReminderViewSet, basename="reminder")
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("analytics/", ReminderViewSet.as_view({"get": "analytics"}), name="reminder-analytics"),
 ]

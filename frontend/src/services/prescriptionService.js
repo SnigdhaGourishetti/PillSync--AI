@@ -5,12 +5,13 @@ export const getPrescriptions = async () => {
   return response.data;
 };
 
+export const analyzePrescription = async (formData) => {
+  const response = await api.post("/prescriptions/analyze/", formData);
+  return response.data;
+};
+
 export const uploadPrescription = async (formData) => {
-  const response = await api.post("/prescriptions/", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const response = await api.post("/prescriptions/review_and_save/", formData);
   return response.data;
 };
 
