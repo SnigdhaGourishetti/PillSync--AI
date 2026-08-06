@@ -30,7 +30,7 @@ export default function Prescriptions() {
       setShowModal(false);
       loadPrescriptions();
     } catch (err) {
-      console.error(err);
+      console.error("Upload prescription error:", err?.response?.status, err?.response?.data || err.message);
     }
   };
 
@@ -68,11 +68,16 @@ export default function Prescriptions() {
               <p className="text-lg font-semibold">{prescription.doctor_name}</p>
               <p className="mt-1 text-sm text-slate-400">{prescription.hospital_name}</p>
               <p className="mt-2 text-sm text-slate-300">Date: {prescription.prescription_date}</p>
-              {prescription.prescription_image && (
-                <a href={`http://127.0.0.1:8000${prescription.prescription_image}`} target="_blank" rel="noreferrer" className="mt-4 inline-block text-emerald-400">
-                  View File
-                </a>
-              )}
+              {prescription.prescription_image && (() => {
+                const imageUrl = prescription.prescription_image.startsWith("http")
+                  ? prescription.prescription_image
+                  : `http://127.0.0.1:8000${prescription.prescription_image}`;
+                return (
+                  <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block text-emerald-400">
+                    View File
+                  </a>
+                );
+              })()}
               <div className="mt-4">
                 <button onClick={() => handleDelete(prescription.id)} className="rounded-xl bg-rose-600 px-4 py-2">Delete</button>
               </div>

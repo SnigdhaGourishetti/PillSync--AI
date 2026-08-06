@@ -5,7 +5,12 @@ from django.utils import timezone
 from datetime import datetime, date
 from .models import Reminder
 from .serializers import ReminderSerializer
-from utils.email_utils import send_test_email, send_reminder_email, send_low_stock_email
+from utils.email_utils import (
+    send_low_stock_email,
+    send_reminder_email,
+    send_test_email,
+    send_upcoming_refill_email,
+)
 from medication_history.models import MedicationHistory
 from accounts.models import User
 
@@ -41,28 +46,34 @@ class ReminderViewSet(viewsets.ModelViewSet):
                 # Reduce stock quantity when medicine is taken
                 if new_status == 'TAKEN':
                     medicine = instance.medicine
-                    import re
-                    dosage_match = re.search(r'(\d+)', medicine.dosage)
-                    if dosage_match:
-                        dosage_per_intake = int(dosage_match.group(1))
-                        if medicine.stock_quantity >= dosage_per_intake:
-                            medicine.stock_quantity -= dosage_per_intake
-                            medicine.save()
-                            
-                            # Check for low stock and send email if needed
-                            days_remaining = medicine.calculate_days_remaining()
-                            if days_remaining <= 2 and not medicine.low_stock_email_sent:
-                                user_email = instance.user.email
-                                if user_email:
-                                    success, _ = send_low_stock_email(
-                                        user_email=user_email,
-                                        user_name=instance.user.username,
-                                        medicine_name=medicine.medicine_name,
-                                        days_remaining=days_remaining
-                                    )
-                                    if success:
-                                        medicine.low_stock_email_sent = True
-                                        medicine.save()
+                    units_per_intake = medicine.units_per_dose if medicine.units_per_dose > 0 else 1
+                    medicine.stock_quantity = max(0, medicine.stock_quantity - units_per_intake)
+                    medicine.save(update_fields=["stock_quantity"])
+
+                    days_remaining = medicine.calculate_days_remaining()
+                    user_email = instance.user.email
+                    if user_email:
+                        if days_remaining <= 2 and not medicine.low_stock_email_sent:
+                            success, _ = send_low_stock_email(
+                                user_email=user_email,
+                                user_name=instance.user.username,
+                                medicine_name=medicine.medicine_name,
+                                days_remaining=days_remaining,
+                            )
+                            if success:
+                                medicine.low_stock_email_sent = True
+                                medicine.save(update_fields=["low_stock_email_sent"])
+                        elif days_remaining <= 5 and not medicine.upcoming_refill_email_sent and not medicine.low_stock_email_sent:
+                            success, _ = send_upcoming_refill_email(
+                                user_email=user_email,
+                                user_name=instance.user.username,
+                                medicine_name=medicine.medicine_name,
+                                days_remaining=days_remaining,
+                                run_out_date=str(medicine.predicted_run_out_date()),
+                            )
+                            if success:
+                                medicine.upcoming_refill_email_sent = True
+                                medicine.save(update_fields=["upcoming_refill_email_sent"])
 
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
@@ -127,6 +138,13 @@ class ReminderViewSet(viewsets.ModelViewSet):
             'recent_history': recent_history_data,
         })
 
+    @action(detail=False, methods=["get"])
+    def analytics(self, request):
+        from .analytics import get_adherence_analytics
+
+        days = request.query_params.get("days", 30)
+        return Response(get_adherence_analytics(request.user, days=days), status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'], url_path='action')
     def update_status(self, request, pk=None):
         reminder = self.get_object()
@@ -162,35 +180,34 @@ class ReminderViewSet(viewsets.ModelViewSet):
             # Reduce stock quantity when medicine is taken
             if action == 'TAKEN':
                 medicine = reminder.medicine
-                # Assume 1 unit per intake (1 tablet/capsule) regardless of dosage mg
-                dosage_per_intake = 1
-                print(f"Before: {medicine.medicine_name} stock={medicine.stock_quantity}, units to subtract={dosage_per_intake}")
-                # Always reduce stock (even if it goes to zero or below)
-                medicine.stock_quantity = max(0, medicine.stock_quantity - dosage_per_intake)
-                medicine.save()
-                print(f"After: {medicine.medicine_name} stock={medicine.stock_quantity}")
-                
-                # Check for low stock and send email if needed
+                units_per_intake = medicine.units_per_dose if medicine.units_per_dose > 0 else 1
+                medicine.stock_quantity = max(0, medicine.stock_quantity - units_per_intake)
+                medicine.save(update_fields=["stock_quantity"])
+
                 days_remaining = medicine.calculate_days_remaining()
-                print(f"Days remaining for {medicine.medicine_name}: {days_remaining}")
-                if days_remaining <= 2 and not medicine.low_stock_email_sent:
-                    user_email = reminder.user.email
-                    print(f"Sending low stock email to {user_email}")
-                    if user_email:
-                        success, message = send_low_stock_email(
+                user_email = reminder.user.email
+                if user_email:
+                    if days_remaining <= 2 and not medicine.low_stock_email_sent:
+                        success, _ = send_low_stock_email(
                             user_email=user_email,
                             user_name=reminder.user.username,
                             medicine_name=medicine.medicine_name,
-                            days_remaining=days_remaining
+                            days_remaining=days_remaining,
                         )
                         if success:
                             medicine.low_stock_email_sent = True
-                            medicine.save()
-                            print("Low stock email sent successfully")
-                        else:
-                            print(f"Failed to send low stock email: {message}")
-                else:
-                    print(f"Low stock email not sent. Days remaining: {days_remaining}, Email already sent: {medicine.low_stock_email_sent}")
+                            medicine.save(update_fields=["low_stock_email_sent"])
+                    elif days_remaining <= 5 and not medicine.upcoming_refill_email_sent and not medicine.low_stock_email_sent:
+                        success, _ = send_upcoming_refill_email(
+                            user_email=user_email,
+                            user_name=reminder.user.username,
+                            medicine_name=medicine.medicine_name,
+                            days_remaining=days_remaining,
+                            run_out_date=str(medicine.predicted_run_out_date()),
+                        )
+                        if success:
+                            medicine.upcoming_refill_email_sent = True
+                            medicine.save(update_fields=["upcoming_refill_email_sent"])
         
         serializer = self.get_serializer(reminder)
         return Response(serializer.data)
