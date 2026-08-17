@@ -12,23 +12,14 @@ export default function Login() {
 
     try {
       const data = await loginUser(username, password);
-      const role = (data?.user?.role || data?.role || "PATIENT").toUpperCase();
 
       localStorage.removeItem("access");
       localStorage.removeItem("refresh");
-      localStorage.removeItem("role");
 
       localStorage.setItem("access", data.access);
       localStorage.setItem("refresh", data.refresh);
-      localStorage.setItem("role", role);
 
-      if (role === "ADMIN") {
-        navigate("/admin-dashboard");
-      } else if (role === "CAREGIVER") {
-        navigate("/caregiver-dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+      navigate("/dashboard");
     } catch (err) {
       console.error(err.response?.data);
       alert(JSON.stringify(err.response?.data));
